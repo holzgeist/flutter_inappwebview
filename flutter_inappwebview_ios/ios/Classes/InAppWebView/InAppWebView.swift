@@ -546,7 +546,7 @@ public class InAppWebView: WKWebView, UIScrollViewDelegate, WKUIDelegate,
             // This is a limitation of the official WebKit API.
             return
         }
-        configuration.userContentController = WKUserContentController()
+        // configuration.userContentController = WKUserContentController()
         configuration.userContentController.initialize()
         
         if let applePayAPIEnabled = settings?.applePayAPIEnabled, applePayAPIEnabled {
