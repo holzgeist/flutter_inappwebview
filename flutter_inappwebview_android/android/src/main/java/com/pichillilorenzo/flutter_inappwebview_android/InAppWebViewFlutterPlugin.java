@@ -24,9 +24,7 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
-import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.platform.PlatformViewRegistry;
-import io.flutter.view.FlutterView;
 
 public class InAppWebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
 
@@ -64,51 +62,32 @@ public class InAppWebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
   public ProcessGlobalConfigManager processGlobalConfigManager;
   public FlutterWebViewFactory flutterWebViewFactory;
   public Context applicationContext;
-  public PluginRegistry.Registrar registrar;
   public BinaryMessenger messenger;
   public FlutterPlugin.FlutterAssets flutterAssets;
   @Nullable
   public ActivityPluginBinding activityPluginBinding;
   @Nullable
   public Activity activity;
-  @SuppressWarnings("deprecation")
-  public FlutterView flutterView;
 
   public InAppWebViewFlutterPlugin() {}
 
-  @SuppressWarnings("deprecation")
-  public static void registerWith(PluginRegistry.Registrar registrar) {
+  public static void registerWith(io.flutter.embedding.engine.plugins.FlutterPluginBinding binding) {
     final InAppWebViewFlutterPlugin instance = new InAppWebViewFlutterPlugin();
-    instance.registrar = registrar;
-    instance.onAttachedToEngine(
-            registrar.context(), registrar.messenger(), registrar.activity(), registrar.platformViewRegistry(), registrar.view());
+    instance.onAttachedToEngine(binding);
   }
 
   @Override
   public void onAttachedToEngine(FlutterPluginBinding binding) {
     this.flutterAssets = binding.getFlutterAssets();
-
-    // Shared.activity could be null or not.
-    // It depends on who is called first between onAttachedToEngine event and onAttachedToActivity event.
-    //
-    // See https://github.com/pichillilorenzo/flutter_inappwebview/issues/390#issuecomment-647039084
-    onAttachedToEngine(
-            binding.getApplicationContext(), binding.getBinaryMessenger(), this.activity, binding.getPlatformViewRegistry(), null);
-  }
-
-  @SuppressWarnings("deprecation")
-  private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger, Activity activity, PlatformViewRegistry platformViewRegistry, FlutterView flutterView) {
-    this.applicationContext = applicationContext;
-    this.activity = activity;
-    this.messenger = messenger;
-    this.flutterView = flutterView;
+    this.applicationContext = binding.getApplicationContext();
+    this.messenger = binding.getBinaryMessenger();
 
     inAppBrowserManager = new InAppBrowserManager(this);
     headlessInAppWebViewManager = new HeadlessInAppWebViewManager(this);
     chromeSafariBrowserManager = new ChromeSafariBrowserManager(this);
     noHistoryCustomTabsActivityCallbacks = new NoHistoryCustomTabsActivityCallbacks(this);
     flutterWebViewFactory = new FlutterWebViewFactory(this);
-    platformViewRegistry.registerViewFactory(
+    binding.getPlatformViewRegistry().registerViewFactory(
             FlutterWebViewFactory.VIEW_TYPE_ID, flutterWebViewFactory);
 
     platformUtil = new PlatformUtil(this);
@@ -132,6 +111,10 @@ public class InAppWebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
 
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+    disposeManagers();
+  }
+
+  private void disposeManagers() {
     if (platformUtil != null) {
       platformUtil.dispose();
       platformUtil = null;
@@ -198,38 +181,21 @@ public class InAppWebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
   public void onAttachedToActivity(ActivityPluginBinding activityPluginBinding) {
     this.activityPluginBinding = activityPluginBinding;
     this.activity = activityPluginBinding.getActivity();
-
-    if (noHistoryCustomTabsActivityCallbacks != null) {
-      this.activity.getApplication().registerActivityLifecycleCallbacks(noHistoryCustomTabsActivityCallbacks.activityLifecycleCallbacks);
-    }
   }
 
   @Override
   public void onDetachedFromActivityForConfigChanges() {
-    if (activity != null && noHistoryCustomTabsActivityCallbacks != null) {
-      this.activity.getApplication().unregisterActivityLifecycleCallbacks(noHistoryCustomTabsActivityCallbacks.activityLifecycleCallbacks);
-    }
-
     activityPluginBinding = null;
     activity = null;
   }
 
   @Override
   public void onReattachedToActivityForConfigChanges(ActivityPluginBinding activityPluginBinding) {
-    this.activityPluginBinding = activityPluginBinding;
-    this.activity = activityPluginBinding.getActivity();
-
-    if (noHistoryCustomTabsActivityCallbacks != null) {
-      this.activity.getApplication().registerActivityLifecycleCallbacks(noHistoryCustomTabsActivityCallbacks.activityLifecycleCallbacks);
-    }
+    onAttachedToActivity(activityPluginBinding);
   }
 
   @Override
   public void onDetachedFromActivity() {
-    if (activity != null && noHistoryCustomTabsActivityCallbacks != null) {
-      this.activity.getApplication().unregisterActivityLifecycleCallbacks(noHistoryCustomTabsActivityCallbacks.activityLifecycleCallbacks);
-    }
-
     activityPluginBinding = null;
     activity = null;
   }
