@@ -71,13 +71,8 @@ public class InAppWebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
 
   public InAppWebViewFlutterPlugin() {}
 
-  public static void registerWith(io.flutter.embedding.engine.plugins.FlutterPluginBinding binding) {
-    final InAppWebViewFlutterPlugin instance = new InAppWebViewFlutterPlugin();
-    instance.onAttachedToEngine(binding);
-  }
-
   @Override
-  public void onAttachedToEngine(FlutterPluginBinding binding) {
+  public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
     this.flutterAssets = binding.getFlutterAssets();
     this.applicationContext = binding.getApplicationContext();
     this.messenger = binding.getBinaryMessenger();
